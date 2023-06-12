@@ -1,5 +1,5 @@
-require "json"
-require "rspec/json_expectations/matchers"
+require 'json'
+require 'rspec/json_expectations/matchers'
 
 module RSpec
   module JsonExpectations
@@ -11,10 +11,10 @@ module RSpec
       HANDLED_BY_SIMPLE_VALUE_HANDLER = [String, Numeric, FalseClass, TrueClass, NilClass]
       RSPECMATCHERS = [RSpec::Matchers::BuiltIn::BaseMatcher, RSpec::Matchers::AliasedMatcher]
       SUPPORTED_VALUES = [Hash, Regexp, Array, Matchers::UnorderedArrayMatcher] +
-        HANDLED_BY_SIMPLE_VALUE_HANDLER + RSPECMATCHERS
+                         HANDLED_BY_SIMPLE_VALUE_HANDLER + RSPECMATCHERS
 
       class << self
-        def traverse(errors, expected, actual, negate=false, prefix=[], options={})
+        def traverse(errors, expected, actual, negate = false, prefix = [], options = {})
           [
             handle_hash(errors, expected, actual, negate, prefix),
             handle_array(errors, expected, actual, negate, prefix),
@@ -28,32 +28,32 @@ module RSpec
 
         private
 
-        def handle_keyvalue(errors, expected, actual, negate=false, prefix=[])
+        def handle_keyvalue(errors, expected, actual, negate = false, prefix = [])
           expected.map do |key, value|
             new_prefix = prefix + [key]
             if has_key?(actual, key)
               traverse(errors, value, fetch(actual, key), negate, new_prefix)
             else
-              errors[new_prefix.join("/")] = :no_key unless negate
+              errors[new_prefix.join('/')] = :no_key unless negate
               conditionally_negate(false, negate)
             end
           end.all? || false
         end
 
-        def handle_hash(errors, expected, actual, negate=false, prefix=[])
+        def handle_hash(errors, expected, actual, negate = false, prefix = [])
           return nil unless expected.is_a?(Hash)
 
           handle_keyvalue(errors, expected, actual, negate, prefix)
         end
 
-        def handle_array(errors, expected, actual, negate=false, prefix=[])
+        def handle_array(errors, expected, actual, negate = false, prefix = [])
           return nil unless expected.is_a?(Array)
 
           transformed_expected = expected.each_with_index.map { |v, k| [k, v] }
           handle_keyvalue(errors, transformed_expected, actual, negate, prefix)
         end
 
-        def handle_unordered(errors, expected, actual, negate=false, prefix=[], options={})
+        def handle_unordered(errors, expected, actual, negate = false, prefix = [], options = {})
           return nil unless expected.is_a?(Matchers::UnorderedArrayMatcher)
 
           match_size_assertion_result = \
@@ -71,22 +71,22 @@ module RSpec
           return nil unless match_size
           return nil if expected.size == actual.size
 
-          errors[prefix.join("/")] = {
+          errors[prefix.join('/')] = {
             _size_mismatch_error: true,
             expected: expected.unwrap_array,
             actual: actual,
-            extra_elements: actual - expected.unwrap_array,
+            extra_elements: actual - expected.unwrap_array
           }
           false
         end
 
-        def handle_value(errors, expected, actual, negate=false, prefix=[])
+        def handle_value(errors, expected, actual, negate = false, prefix = [])
           return nil unless handled_by_simple_value?(expected)
 
           if conditionally_negate(actual == expected, negate)
             true
           else
-            errors[prefix.join("/")] = {
+            errors[prefix.join('/')] = {
               actual: actual,
               expected: expected
             }
@@ -98,13 +98,13 @@ module RSpec
           HANDLED_BY_SIMPLE_VALUE_HANDLER.any? { |type| type === expected }
         end
 
-        def handle_regex(errors, expected, actual, negate=false, prefix=[])
+        def handle_regex(errors, expected, actual, negate = false, prefix = [])
           return nil unless expected.is_a?(Regexp)
 
           if conditionally_negate(!!expected.match(actual.to_s), negate)
             true
           else
-            errors[prefix.join("/")] = {
+            errors[prefix.join('/')] = {
               actual: actual,
               expected: expected
             }
@@ -112,15 +112,16 @@ module RSpec
           end
         end
 
-        def handle_rspec_matcher(errors, expected, actual, negate=false, prefix=[])
+        def handle_rspec_matcher(errors, expected, actual, negate = false, prefix = [])
           return nil unless defined?(RSpec::Matchers)
           return nil unless expected.is_a?(RSpec::Matchers::BuiltIn::BaseMatcher) ||
-            expected.is_a?(RSpec::Matchers::AliasedMatcher)
+                            expected.is_a?(RSpec::Matchers::AliasedMatcher)
 
+          binding.pry
           if conditionally_negate(!!expected.matches?(actual), negate)
             true
           else
-            errors[prefix.join("/")] = {
+            errors[prefix.join('/')] = {
               actual: actual,
               expected: expected.description
             }
@@ -129,10 +130,10 @@ module RSpec
         end
 
         def handle_unsupported(expected)
-          unless SUPPORTED_VALUES.any? { |type| expected.is_a?(type) }
-            raise NotImplementedError,
-              "#{expected} expectation is not supported"
-          end
+          return if SUPPORTED_VALUES.any? { |type| expected.is_a?(type) }
+
+          raise NotImplementedError,
+                "#{expected} expectation is not supported"
         end
 
         def has_key?(actual, key)
@@ -145,7 +146,7 @@ module RSpec
           end
         end
 
-        def fetch(actual, key, default=nil)
+        def fetch(actual, key, default = nil)
           if actual.is_a?(Hash)
             actual.has_key?(key) ? actual[key] : actual[key.to_s]
           elsif actual.is_a?(Array)
@@ -155,10 +156,9 @@ module RSpec
           end
         end
 
-        def conditionally_negate(value, negate=false)
+        def conditionally_negate(value, negate = false)
           value ^ negate
         end
-
       end
     end
   end
